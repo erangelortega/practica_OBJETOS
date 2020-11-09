@@ -1,0 +1,68 @@
+import vikingos.*
+
+describe "parcial Vikingos" {
+	const vik_soldado1 = new Soldado(casta = jarl, vidasCobradas = 25, armas = 0 )
+	const vik_soldado2 = new Soldado(casta = karl, vidasCobradas = 19, armas = 15 )
+	const vik_granjero1 = new Granjero(casta = jarl, cantHijos = 2, cantHectareas = 4 )
+	const vik_granjero2 = new Granjero(casta = jarl, cantHijos = 2, cantHectareas = 3 )
+	
+	const expedicion = new Expedicion()
+	
+	const capital = new Capital(factorDeRiqueza = 10, defensores = 2)
+	const aldea = new Aldea(cantCrucifijos = 15)
+	const aldeaAmurallada = new AldeaAmurallada(cantCrucifijos = 15, cantMinVikingos = 1)
+
+	
+	// PUNTO 1 - Armar expediciones
+	test "Subir un vikingo a una expedición- jarl sin armas puede subir" {
+	expedicion.subir(vik_soldado1)
+	assert.equals(vik_soldado1, expedicion.vikingos().last())
+	}
+	
+	test "vikingo NO puede subir a una expedición" {
+	assert.throwsExceptionWithMessage("no se puede agregar vikingo a la expedicion",{expedicion.subir(vik_soldado2)})
+	}
+	
+	test "vikingo NO puede subir a una expedición - jarl con armas no puede subir" {
+	assert.throwsExceptionWithMessage("no se puede agregar vikingo a la expedicion",{expedicion.subir(vik_granjero2)})
+	}
+	
+	//PUNTO 2 -Expediciones que valen la pena
+	test "Una Expedicion vale la pena" {
+	expedicion.subir(vik_soldado1)
+	expedicion.subir(vik_granjero1)
+	expedicion.agregarObjetivo(capital)
+	expedicion.agregarObjetivo(aldea)
+	expedicion.agregarObjetivo(aldeaAmurallada)
+	assert.that(expedicion.valeLaPena())
+	}
+	
+	//PUNTO 3 - Realizar una expedición.
+	test " invadir todos los objetivos involucrados de la expedicion, repartiendo el botin y produccion destruccion en los Objetivos Conquistados" {
+	expedicion.subir(vik_soldado1)
+	expedicion.subir(vik_granjero1)
+	expedicion.agregarObjetivo(capital)
+	expedicion.agregarObjetivo(aldea)
+	expedicion.agregarObjetivo(aldeaAmurallada)
+	expedicion.realizar()
+	assert.equals(0, capital.defensores())
+	assert.equals(0, aldea.cantCrucifijos())
+	assert.equals(0, aldeaAmurallada.cantCrucifijos())
+	}
+	
+	/*PUNTO 4 - Pregunta teórica:
+	 Aparecen los castillos, que son un nuevo posible objetivo a invadir además de las aldeas y capitales. 
+	 ¿Pueden agregarse sin modificar código existente? Explicar cómo agregarlo. Justificar conceptualmente.
+	 se puede agreagar la nueva clase heredando de la clase lugar y haciendo override de los metodos 
+	 * valeLPena()
+	 * boti()
+	 * destruir()
+	 para consevar el polimorfismo y pueda entender los mismos mensajes que se vienen manejando
+	 */ 
+	
+	// PUNTO 5 - Ascenso social
+	test "Hacer que un vikingo escale socialmente" {
+	vik_soldado2.ascender()
+	assert.equals(25, vik_soldado2.armas())
+	}
+}

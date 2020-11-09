@@ -1,0 +1,123 @@
+import inmobiliaria.*
+import agente.*
+import inmueble.*
+
+describe "PARCIAL INMOBILIARIA" {
+	
+	const elo = new Agente()
+	const diego = new Agente()
+	
+	const my_casa = new Inmueble(tamanio = 10, ambientes = 2, operacion = venta, tipoInmueble = casa, zona = palermo)
+	const my_ph = new Inmueble(tamanio = 10, ambientes = 2, operacion = alquiler, tipoInmueble = ph, zona = palermo)
+	const my_dpto = new Inmueble(tamanio = 10, ambientes = 2, operacion = venta, tipoInmueble = departamento, zona = palermo)
+	const my_galpon = new Inmueble(tamanio = 10, ambientes = 2, operacion = alquiler, tipoInmueble = galpon, zona = palermo)
+	
+		
+	//PUNTO 1
+	test "comision por VENTA concretada de CASA" {
+		casa.valorInmueble(1000)
+		assert.equals(30, venta.calcularComision(my_casa))
+	}
+	
+	test "comision por ALQUILER concretada PH" {
+		alquiler.meses(12)	
+		assert.equals(120.24, alquiler.calcularComision(my_ph))
+
+	}
+	
+	test "comision por VENTA concretado DEPARTAMENTO" {
+		casa.valorInmueble(1000)
+		assert.equals(10515, venta.calcularComision(my_dpto))
+
+	}
+	
+	//PUNTO 2
+	test "mejor empleado por TOTAL de COMISIONES por operaciones concretadas" {
+		inmobiliaria.contratar(elo)
+		inmobiliaria.contratar(diego)
+		elo.agregarOperacionConcretada(my_casa)
+		elo.agregarOperacionConcretada(my_ph)
+		diego.agregarOperacionConcretada(my_dpto)
+		inmobiliaria.buscarMejorEmpleado(totalComisiones)
+		assert.equals(diego, inmobiliaria.mejorEmpleado())
+	}	
+	
+	test "Mejor empleado por MAYOR CANTIDAD de COMISIONES por operaciones concretadas" {
+		inmobiliaria.contratar(elo)
+		inmobiliaria.contratar(diego)
+		elo.agregarOperacionConcretada(my_casa)
+		elo.agregarOperacionConcretada(my_ph)
+		diego.agregarOperacionConcretada(my_dpto)
+		inmobiliaria.buscarMejorEmpleado(cantOperacionesCerradas)
+		assert.equals(elo, inmobiliaria.mejorEmpleado())
+	
+	}
+	
+	test "EMPATE por MAYOR CANTIDAD de COMISIONES por operaciones concretadas" {
+		inmobiliaria.contratar(elo)
+		inmobiliaria.contratar(diego)
+		elo.agregarOperacionConcretada(my_ph)
+		diego.agregarOperacionConcretada(my_dpto)
+		assert.throwsExceptionWithMessage("hay empate", {inmobiliaria.buscarMejorEmpleado(cantOperacionesCerradas)})
+
+	} 
+	
+	test "mejor empleado por MAYOR CANTIDAD de RESERVAS" {
+		inmobiliaria.contratar(elo)
+		inmobiliaria.contratar(diego)
+		my_casa.reservar("luis", elo)
+		my_ph.reservar("luis", diego)
+		my_dpto.reservar("luis", diego)
+		inmobiliaria.buscarMejorEmpleado(cantReservas)
+		assert.equals(diego, inmobiliaria.mejorEmpleado())
+	}
+	
+	//PUNTO 3
+	test "un empleado tendra problema con otro" {
+		my_casa.reservar("luis", elo)
+		my_casa.concretar("luis", diego)
+		my_ph.concretar("roberto",elo)
+		my_dpto.concretar("luis", diego)
+		
+		assert.that(elo.problemaPotencialCon(diego, palermo))
+	}
+	
+	//PUNTO 4
+	test "un inmueble se PUEDE RESERVAR" {
+		my_casa.reservar("luis", elo)		
+		assert.that(my_casa.reservar())
+	}
+
+	test "un inmueble NO se PUEDE RESERVAR" {
+		my_casa.reservar("luis", elo)
+		assert.throwsExceptionWithMessage("inmueble reservado por otro cliente", {my_casa.reservar("frank", diego)})
+	}
+	
+	test "un inmueble se VENDE" {
+		my_casa.operacion(venta)
+		my_casa.concretar("luis", diego)
+		assert.equals(my_casa, diego.get_operacionesConcretadas().last())
+	}
+	
+	test "un inmueble se ALQUILA" {
+		my_ph.operacion(alquiler)
+		my_ph.concretar("luis", diego)
+		assert.equals(my_ph, diego.get_operacionesConcretadas().last())
+	}
+	
+	//PUNTO 5
+	test "comision por alquiler de GALPON" {
+		galpon.valorInmueble(1000)
+		alquiler.meses(12)
+		my_galpon.tipoOperacion(alquiler)
+		assert.equals(0.36, alquiler.calcularComision(my_galpon))
+	}
+	
+	test "ALQUILAR un galpon" {
+		galpon.valorInmueble(1000)
+		alquiler.meses(12)
+		assert.throwsExceptionWithMessage("Operacion restringida para este inmueble", {my_galpon.tipoOperacion(venta)})
+	}
+	
+	
+}

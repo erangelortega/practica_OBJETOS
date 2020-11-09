@@ -1,0 +1,183 @@
+import example.*
+import packs.*
+import consumos.*
+
+describe "parcial PDPFONIC" {
+	const hoy = new Date()
+	const ayer = hoy.minusDays(1)
+	const linea = new Linea (numeroTelefono = 1566666666, tipoLinea = comun)
+	
+	//CONSUMOS
+	const llamada40sg = new ConsumoLlamada(fecha = ayer, cantidad = 40)
+	const internet5MB = new ConsumoInternet(fecha = hoy, cantidad = 5)
+	const internet100MB = new ConsumoInternet (fecha = hoy, cantidad = 100)
+	const llamada60sg = new ConsumoLlamada(fecha = ayer, cantidad = 60)
+	
+	//PACKS
+	const pack100MB = new InternetLibre (cantidad = 100, fechaVencimiento = hoy.plusDays(1))
+	const pack100Pesos = new Credito (cantidad = 100, fechaVencimiento = hoy.plusDays(1))
+	const pack10MB = new InternetLibre (cantidad = 10, fechaVencimiento = hoy.plusDays(1))
+	const pack50Pesos = new Credito (cantidad = 50, fechaVencimiento = new Date(day=13, month=10, year = 2019))  	//asumo que esta vencido, de lo contrario si podria hacerse
+	const pack200MB = new InternetLibre (cantidad = 200, fechaVencimiento = new Date(day=13, month=10, year = 2019))
+	const pack5MB = new InternetLibre (cantidad = 5, fechaVencimiento = hoy.plusDays(1))
+	const pack15MB = new InternetLibre (cantidad = 15, fechaVencimiento = new Date(day=12, month=12, year = 2019))
+		
+	
+	// punto1
+	test "costo de una llamada realizada" {
+		assert.that(llamada40sg.costo() == 1.5)
+	}
+
+	test "costo de MB utilizados" {		
+		assert.that(internet5MB.costo() == 0.5)
+	}
+	
+	//punto2
+	test "costo promedio de consumos realizados por linea" {
+		linea.agregarConsumo(llamada40sg)
+		linea.agregarConsumo(internet5MB)
+		assert.equals(1, linea.promedioConsumo(ayer, hoy) )
+	}
+	
+	test "costo total de consumos de los ultimos 30 dias" {
+		linea.agregarConsumo(llamada40sg)
+		linea.agregarConsumo(internet5MB)
+		assert.equals(2, linea.consumoUltimos30Dias() )
+	}
+	
+	
+	//punto 3
+	test "pack puede satisfacer consumo" {
+		assert.that(pack100MB.puedeSatisfacer(internet100MB))
+		assert.notThat(pack100MB.puedeSatisfacer(llamada60sg))
+		assert.that(pack100Pesos.puedeSatisfacer(internet100MB))
+		assert.that(pack100Pesos.puedeSatisfacer(llamada60sg))
+	}
+	
+	//punto 4
+	test "agregar un pack a la linea" {
+		linea.agregarPack(pack100Pesos)
+		assert.equals(pack100Pesos, linea.getPacks().last())
+	}
+	
+	//punto 5
+	test "linea NO puede hacer consumo" {
+
+		linea.agregarPack(pack10MB)
+		linea.agregarPack(pack50Pesos)
+		linea.agregarPack(pack200MB)
+		linea.agregarPack(pack5MB)
+		linea.agregarPack(pack15MB)
+		
+		const internet20MB = new ConsumoInternet(fecha = hoy, cantidad = 20)
+		assert.notThat(linea.puedeHacer(internet20MB))
+	}
+
+	// punto 6
+	test "linea NO realiza consumo" {
+		const internet20MB = new ConsumoInternet(fecha = hoy, cantidad = 20)
+	
+		linea.agregarPack(pack5MB)
+
+		assert.throwsExceptionWithMessage("no se puede hacer el consumo",{linea.consumir(internet20MB)})
+	}	
+	
+	test "linea realiza consumo" {
+		const packllamadaGratis = new LlamadasGratis (fechaVencimiento = hoy.plusDays(1))
+		const pack50Pesos2 = new Credito (cantidad = 50, fechaVencimiento = hoy)
+		
+		linea.agregarPack(packllamadaGratis)
+		linea.agregarPack(pack50Pesos2)
+		linea.consumir(llamada40sg)
+
+		assert.equals(48.5, pack50Pesos2.cantidad())
+	}
+	
+	//punto 7a	
+	test "limpieza de packs vencidos o consumidos" {		
+		linea.agregarPack(pack10MB)
+		linea.agregarPack(pack50Pesos)
+		linea.agregarPack(pack200MB)
+		linea.agregarPack(pack5MB)
+		linea.agregarPack(pack15MB)
+		
+		linea.consumir(internet5MB)
+		linea.cleanPacks()
+
+		assert.that(linea.getPacks() == [pack10MB])
+	}	
+	
+	//punto 7b
+	test "pack MBLibre plus puede satisfacer consumo" {
+		
+		const pack0MB = new MBlibresPlus (cantidad = 0, fechaVencimiento = hoy.plusDays(1))
+		const internet01MB = new ConsumoInternet(fecha = hoy, cantidad = 0.1)
+		
+		assert.that(pack0MB.puedeSatisfacer(internet01MB))
+		
+		pack0MB.gastar(internet01MB)
+		assert.equals(0, pack0MB.cantidad())
+	}	
+	
+	//punto 8
+	test "linea COMUN consume internet" {		
+		linea.agregarPack(pack5MB)
+		linea.consumir(internet5MB)
+		
+		assert.that(pack5MB.cantidad() == 0)
+	}
+	
+	test "linea black consume internet sin tener pack que satisfaga el consumo" {		
+		const pack0MB = new MBlibresPlus (cantidad = 0, fechaVencimiento = hoy.plusDays(1))
+		
+		linea.tipoLinea(black)
+		linea.agregarPack(pack0MB)
+		linea.consumir(internet5MB)
+		
+		assert.that(linea.getConsumos().last() == internet5MB)
+	}	
+	
+	test "linea platinum consume internet sin tener pack que satisfaga el consumo" {		
+		const pack0MB = new MBlibresPlus (cantidad = 0, fechaVencimiento = hoy.plusDays(1))
+		
+		linea.tipoLinea(platinum)
+		linea.agregarPack(pack0MB)
+		linea.consumir(internet5MB)
+		
+		assert.that(linea.getConsumos().last() == internet5MB)
+	}
+	
+	test "linea cambia de tipo sin perder las estadisticas" {	
+		const pack50Pesos2 = new Credito (cantidad = 50, fechaVencimiento = new Date(day=13, month=10, year = 2019)) 
+		const pack0MB = new MBlibresPlus (cantidad = 0, fechaVencimiento = hoy.plusDays(1))
+			
+		linea.agregarPack(pack10MB)
+		linea.agregarPack(pack50Pesos2)
+		linea.agregarPack(pack200MB)
+		assert.equals(3, linea.getPacks().size())
+		
+		linea.tipoLinea(black)
+		linea.cleanPacks()
+		assert.equals(1, linea.getPacks().size())
+
+		linea.agregarPack(pack5MB)
+		linea.agregarPack(pack15MB)
+		 assert.equals(3, linea.getPacks().size())		
+		
+		linea.tipoLinea(platinum)
+		linea.agregarPack(pack0MB)
+		linea.consumir(internet5MB)
+		
+		assert.that(linea.getConsumos().last() == internet5MB)
+	}
+
+}
+
+
+/*Describir y justificar qué es lo mínimo necesario que hay que hacer para agregar:
+una nuevo pack (como los mencionados al ppio)
+* 	debe poder entender los metodos de la clase abstracta Pack, y de ser necesario hacer override en los que se necesite, para conservar el polimorfismo
+un nuevo consumo (como la posibilidad de enviar sms)
+* 	debe poder enteder los mensajes d ela clase abstracta Consumo y definir las unidades de medida por ejemplo "caracteres"
+Debe usarse un diagrama que acompañe la explicación.
+ */
