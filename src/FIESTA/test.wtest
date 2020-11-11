@@ -1,0 +1,88 @@
+import disfraz.*
+import fiesta.*
+
+
+describe "Parcial fiesta" {
+	
+	const hoy = new Date()
+	
+	const frijol = new Disfraz(nombre = "frijol", fechaConfeccion = hoy.minusDays(3), nivelDeGracia = 10)
+	const col = new Disfraz(nombre = "col", fechaConfeccion = hoy.minusDays(3), nivelDeGracia = 10)
+	
+	const elo = new Caprichoso(disfraz = frijol, edad = 29, personalidad = taciturna)
+	const diego = new Numerologo(disfraz = frijol, edad = 29, personalidad = taciturna, puntajeParaElDifraz = 5)
+	
+	const fiesta = new Fiesta(lugar = "palermo", fecha = hoy)
+	
+	//punto1
+	test "determinar puntaje de un disfraz"{
+		frijol.agregarCaracteristica(gracioso)
+		frijol.agregarCaracteristica(tobaras)
+		frijol.agregarCaracteristica(caretas)
+		frijol.agregarCaracteristica(sexies)
+		assert.equals( 38 ,frijol.puntaje(elo, fiesta))
+	}
+	
+	//punto 2
+	test "fiesta es bodrio"{
+		frijol.agregarCaracteristica(gracioso)
+		col.agregarCaracteristica(tobaras)
+		fiesta.agregarInvitado(elo)
+		fiesta.agregarInvitado(diego)
+		
+		assert.that(fiesta.EsBodrio() )
+	}
+	
+	// punto 3
+	
+	test "mejor disfraz de la fiesta"{
+		frijol.agregarCaracteristica(gracioso)
+		col.agregarCaracteristica(tobaras)
+		fiesta.agregarInvitado(elo)
+		fiesta.agregarInvitado(diego)
+		
+		assert.that(fiesta.mejorDisfraz() == frijol )	
+	}
+	
+	//punto 4
+	test "asistente ya esta presente en la fiesta"{
+		frijol.agregarCaracteristica(gracioso)
+		col.agregarCaracteristica(tobaras)
+		fiesta.agregarInvitado(elo)
+		fiesta.agregarInvitado(diego)
+		
+		assert.notThat(fiesta.puedenIntercambiarTrajes(elo, diego))	
+	}
+	
+	
+	//punto 5
+	test "asistentes NO pueden intercambiar trajes"{
+		frijol.agregarCaracteristica(gracioso)
+		fiesta.agregarAsistente(elo)
+
+		assert.that(fiesta.invitados() == [elo])	
+	}
+	
+	test "agregar asistente a la fiesta"{
+		frijol.agregarCaracteristica(gracioso)
+		fiesta.agregarAsistente(elo)
+		
+		assert.throwsException( {fiesta.agregarAsistente(elo)})	
+	}
+	
+	// punto6
+	test "fiesta inolvidable"{
+		frijol.agregarCaracteristica(gracioso)
+		frijol.agregarCaracteristica(tobaras)
+		frijol.agregarCaracteristica(caretas)
+		frijol.agregarCaracteristica(sexies)
+		
+		col.agregarCaracteristica(gracioso)
+		col.agregarCaracteristica(tobaras)
+		col.agregarCaracteristica(caretas)
+		col.agregarCaracteristica(sexies)
+		
+		
+	}
+
+}
